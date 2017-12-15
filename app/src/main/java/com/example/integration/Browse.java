@@ -1,17 +1,22 @@
 package com.example.integration;
 
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PagerSnapHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SnapHelper;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
@@ -27,27 +32,29 @@ import java.util.List;
 
 public class Browse extends AppCompatActivity {
 
-    private ViewStub listStub;
-    private ViewStub gridStub;
-
-    private ListView listView;
-    private GridView gridView;
-
-    private ListViewAdapter listViewAdapter;
-    private GridViewAdapter gridViewAdapter;
-
-    private TextView mTextMessage;
-    private List<Product> productList = new ArrayList<>();
-    private RecyclerView recyclerView;
-    private ProductAdapter pAdapter;
-
-    private Button switchViewBtn;
-
-    private int currentViewMode = 1;
-
     static final int LIST_VIEW_MODE = 0;
     static final int GRID_VIEW_MODE = 1;
-
+    private ViewStub listStub;
+    private ViewStub gridStub;
+    private ListView listView;
+    private GridView gridView;
+    private CardView cardView;
+    private ListViewAdapter listViewAdapter;
+    private GridViewAdapter gridViewAdapter;
+    private CardViewAdapter cardViewAdapter;
+    private RecyclerView recyclerCardView;
+    private TextView mTextMessage;
+    private List<Product> productList = new ArrayList<>();
+    AdapterView.OnItemClickListener onItemClick = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            Toast.makeText(getApplicationContext(), productList.get(position).getTitle(), Toast.LENGTH_SHORT).show();
+        }
+    };
+    private RecyclerView recyclerView;
+    private ProductAdapter pAdapter;
+    private Button switchViewBtn;
+    private int currentViewMode = 1;
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -96,8 +103,17 @@ public class Browse extends AppCompatActivity {
         listStub.inflate();
         gridStub.inflate();
 
+        cardViewAdapter = new CardViewAdapter(this, productList);
+        recyclerCardView = (RecyclerView) findViewById(R.id.card_recycler_view);
+        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 2);
+        recyclerCardView.setLayoutManager(mLayoutManager);
+        recyclerCardView.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(10), true));
+        recyclerCardView.setItemAnimator(new DefaultItemAnimator());
+        recyclerCardView.setAdapter(cardViewAdapter);
+
         listView = (ListView) findViewById(R.id.listView);
-        gridView = (GridView) findViewById(R.id.gridView);
+//        gridView = (GridView) findViewById(R.id.gridView);
+        cardView = (CardView) findViewById(R.id.card_view);
 
         prepareProductData();
 
@@ -105,7 +121,7 @@ public class Browse extends AppCompatActivity {
         currentViewMode = sharedPreferences.getInt("currentViewMode", GRID_VIEW_MODE);
 
         listView.setOnItemClickListener(onItemClick);
-        gridView.setOnItemClickListener(onItemClick);
+//        gridView.setOnItemClickListener(onItemClick);
 
         switchView();
 
@@ -131,20 +147,19 @@ public class Browse extends AppCompatActivity {
         productList.add(new Product(R.drawable.dog1, "Title 5", "Description 5"));
     }
 
-    private void switchView(){
-        Log.d("browse", "switchView with "+currentViewMode);
-        if(LIST_VIEW_MODE == currentViewMode){
+    private void switchView() {
+        Log.d("browse", "switchView with " + currentViewMode);
+        if (LIST_VIEW_MODE == currentViewMode) {
             currentViewMode = GRID_VIEW_MODE;
             Drawable listIcon = getApplicationContext().getResources().getDrawable(R.drawable.list_view);
-            listIcon.setBounds(0,0,60,60);
+            listIcon.setBounds(0, 0, 60, 60);
             switchViewBtn.setCompoundDrawables(listIcon, null, null, null);
             listStub.setVisibility(View.GONE);
             gridStub.setVisibility(View.VISIBLE);
-        }
-        else {
+        } else {
             currentViewMode = LIST_VIEW_MODE;
             Drawable gridIcon = getApplicationContext().getResources().getDrawable(R.drawable.tile_view);
-            gridIcon.setBounds(0,0,60,60);
+            gridIcon.setBounds(0, 0, 60, 60);
             switchViewBtn.setCompoundDrawables(gridIcon, null, null, null);
             listStub.setVisibility(View.VISIBLE);
             gridStub.setVisibility(View.GONE);
@@ -154,22 +169,57 @@ public class Browse extends AppCompatActivity {
         setAdapters();
     }
 
-    private void setAdapters(){
-        if(LIST_VIEW_MODE == currentViewMode){
+    private void setAdapters() {
+        if (LIST_VIEW_MODE == currentViewMode) {
             listViewAdapter = new ListViewAdapter(this, R.layout.list_item, productList);
             listView.setAdapter(listViewAdapter);
         }
-        if(GRID_VIEW_MODE == currentViewMode){
-            gridViewAdapter = new GridViewAdapter(this, R.layout.grid_item, productList);
-            gridView.setAdapter(gridViewAdapter);
+        if (GRID_VIEW_MODE == currentViewMode) {
+            cardViewAdapter = new CardViewAdapter(this, productList);
+            recyclerCardView.setAdapter(cardViewAdapter);
         }
     }
 
-    AdapterView.OnItemClickListener onItemClick = new AdapterView.OnItemClickListener(){
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Toast.makeText(getApplicationContext(), productList.get(position).getTitle(), Toast.LENGTH_SHORT).show();
-        }
-    };
+    /**
+     * Converting dp to pixel
+     */
+    private int dpToPx(int dp) {
+        Resources r = getResources();
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics()));
+    }
 
+    public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
+
+        private int spanCount;
+        private int spacing;
+        private boolean includeEdge;
+
+        public GridSpacingItemDecoration(int spanCount, int spacing, boolean includeEdge) {
+            this.spanCount = spanCount;
+            this.spacing = spacing;
+            this.includeEdge = includeEdge;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view); // item position
+            int column = position % spanCount; // item column
+
+            if (includeEdge) {
+                outRect.left = spacing - column * spacing / spanCount; // spacing - column * ((1f / spanCount) * spacing)
+                outRect.right = (column + 1) * spacing / spanCount; // (column + 1) * ((1f / spanCount) * spacing)
+
+                if (position < spanCount) { // top edge
+                    outRect.top = spacing;
+                }
+                outRect.bottom = spacing; // item bottom
+            } else {
+                outRect.left = column * spacing / spanCount; // column * ((1f / spanCount) * spacing)
+                outRect.right = spacing - (column + 1) * spacing / spanCount; // spacing - (column + 1) * ((1f /    spanCount) * spacing)
+                if (position >= spanCount) {
+                    outRect.top = spacing; // item top
+                }
+            }
+        }
+    }
 }

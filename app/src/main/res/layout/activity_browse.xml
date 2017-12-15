@@ -60,12 +60,19 @@
             android:layout="@layout/list_view"
             android:id="@+id/listStub"/>
 
+        <!--<ViewStub-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_marginTop="10dp"-->
+            <!--android:inflatedId="@+id/showLayout"-->
+            <!--android:layout="@layout/grid_view"-->
+            <!--android:id="@+id/gridStub"/>-->
         <ViewStub
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:inflatedId="@+id/showLayout"
-            android:layout="@layout/grid_view"
+            android:layout="@layout/card_view_list"
             android:id="@+id/gridStub"/>
     </LinearLayout>
 
